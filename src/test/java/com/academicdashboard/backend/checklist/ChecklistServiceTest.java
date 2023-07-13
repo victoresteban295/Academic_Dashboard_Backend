@@ -13,8 +13,9 @@ import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import com.academicdashboard.backend.account.Account;
+import com.academicdashboard.backend.account.AccountRepository;
 import com.academicdashboard.backend.exception.ApiRequestException;
-import com.academicdashboard.backend.student.Student;
 
 @Testcontainers
 @DataMongoTest
@@ -25,6 +26,9 @@ public class ChecklistServiceTest {
 
     @Autowired
     private ChecklistRepository checklistRepository;
+
+    @Autowired
+    private AccountRepository accountRepository;
 
     private ChecklistService checklistService;
 
@@ -38,23 +42,22 @@ public class ChecklistServiceTest {
     @AfterEach
     public void cleanup() {
         this.checklistRepository.deleteAll();
+        mongoTemplate.dropCollection(Account.class);
+        mongoTemplate.createCollection(Account.class);
     }
 
     @Test
     @DisplayName("Should Create a New Checklist Under Student")
     public void shouldCreateNewChecklist() {
-        Student student = new Student(
-                "123973789abjdrfklwi75", 
-                "Victor", 
-                "Benitez", 
-                "March", 19, 1998, 
-                "Albion College", 
-                "Senor", 
-                "Mathematics", "", "", 
-                "emails@email.com", 
-                "psword", 
-                "3233459856");
-        mongoTemplate.insert(student);
+        //Create New User
+        var account = Account.builder()
+            .userId("123973789abjdrfklwi75")
+            .firstname("Victor")
+            .lastname("Benitez")
+            .checklists(new ArrayList<>())
+            .grouplists(new ArrayList<>())
+            .build();
+        accountRepository.save(account);
 
         //When
         checklistService.createChecklist("123973789abjdrfklwi75", "listTitle");
@@ -62,10 +65,8 @@ public class ChecklistServiceTest {
         //Then
         Assertions.assertThat(checklistRepository.findAll().get(0).getTitle()).isEqualTo("listTitle");
 
-        Assertions.assertThat(mongoTemplate.findAll(Student.class)
+        Assertions.assertThat(mongoTemplate.findAll(Account.class)
                 .get(0).getChecklists().get(0).getTitle()).isEqualTo("listTitle");
-
-        mongoTemplate.remove(student);
     }
 
     @Test

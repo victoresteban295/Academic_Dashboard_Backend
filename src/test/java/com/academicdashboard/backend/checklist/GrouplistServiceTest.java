@@ -13,8 +13,9 @@ import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import com.academicdashboard.backend.account.Account;
+import com.academicdashboard.backend.account.AccountRepository;
 import com.academicdashboard.backend.exception.ApiRequestException;
-import com.academicdashboard.backend.student.Student;
 
 @Testcontainers
 @DataMongoTest
@@ -25,6 +26,9 @@ public class GrouplistServiceTest {
 
     @Autowired
     private GrouplistRepository grouplistRepository;
+
+    @Autowired
+    private AccountRepository accountRepository;
 
     private GrouplistService grouplistService;
 
@@ -40,25 +44,22 @@ public class GrouplistServiceTest {
         this.grouplistRepository.deleteAll();
         mongoTemplate.dropCollection(Checklist.class);
         mongoTemplate.createCollection(Checklist.class);
-        mongoTemplate.dropCollection(Student.class);
-        mongoTemplate.createCollection(Student.class);
+        mongoTemplate.dropCollection(Account.class);
+        mongoTemplate.createCollection(Account.class);
     }
 
     @Test
     @DisplayName("Should Create a New Grouplist Under Student")
     public void shouldCreateNewGrouplist() {
-        Student student = new Student(
-                "123973789abjdrfklwi75", 
-                "Victor", 
-                "Benitez", 
-                "March", 19, 1998, 
-                "Albion College", 
-                "Senor", 
-                "Mathematics", "", "", 
-                "emails@email.com", 
-                "psword", 
-                "3233459856");
-        mongoTemplate.insert(student);
+        //Create New User
+        var account = Account.builder()
+            .userId("123973789abjdrfklwi75")
+            .firstname("Victor")
+            .lastname("Benitez")
+            .checklists(new ArrayList<>())
+            .grouplists(new ArrayList<>())
+            .build();
+        accountRepository.save(account);
         
         //When
         grouplistService.createGrouplist("123973789abjdrfklwi75", "grouplistTitle");
@@ -67,10 +68,10 @@ public class GrouplistServiceTest {
         Assertions.assertThat(grouplistRepository.findAll().get(0).getTitle())
             .isEqualTo("grouplistTitle");
 
-        Assertions.assertThat(mongoTemplate.findAll(Student.class).get(0).getGrouplists().get(0).getTitle())
+        Assertions.assertThat(mongoTemplate.findAll(Account.class).get(0).getGrouplists().get(0).getTitle())
             .isEqualTo("grouplistTitle");
 
-        mongoTemplate.remove(student);
+        accountRepository.delete(account);
     }
 
     @Test
